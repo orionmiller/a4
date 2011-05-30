@@ -22,7 +22,7 @@ nicoTest:
 test:
 	@echo "add personal test bench"
 
-clean:
+clean: 
 	@rm *~ *.0
 
 allclean:

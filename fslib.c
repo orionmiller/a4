@@ -6,6 +6,7 @@
 #include "fs.h"
 
 
+
 super_block* checkSuperBlock(FILE *fs)
 {
    super_block* sBlock;
@@ -61,12 +62,12 @@ part_entry* checkPartTable(FILE *fs)
 struct inode* fileChecker (FILE *fs, char* path, int inodeMap,int toInodes)
 {
    int iNum=1, numEnts;
-   char iName[60]="root";
+   char iName[60]="root"; /*magic NUM*/
    char *nextName, *vicPath;
    struct inode* cNode;
    /* set up a copy of path to be mangled by strtok*/
    FATALCALL((vicPath=malloc(strlen(path)+1))==NULL,"malloc");
-   FATALCALL((cNode=malloc(64))==NULL,"malloc");
+   FATALCALL((cNode=malloc(64))==NULL,"malloc"); /*magic NUM*/
 
    strcpy(vicPath,path);
 

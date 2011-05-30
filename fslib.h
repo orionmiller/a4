@@ -25,21 +25,36 @@
 
 /* Checks if there is a valid super block starting at byte 1024.
  * 
- * PARAM: Takes a file pointer.
+ * PARAMATER:
+ *   fs - takes a file pointer to check the super block of.
+ *
  * RETURN: On success it returns a pointer to the super block on failure
  *   returns NULL.
  * 
- * pointer should be freed when done
- * position of fs will be different after use
+ * POSTCONDITION:
+ *   The file offset will be different after use of the function.
+ *
+ * NOTES:
+ *   The pointer to the table should be freed when done.
  */
 super_block* checkSuperBlock(FILE *fs);
 
 
 /* Takes a file pointer and checks if there is a valid partition table
  *   at 0x1BE.
- * On success a pointer to the table is returned, on failure returns NULL
- * pointer to table should be freed when done
- * position of fs will be different after use
+ * 
+ * PARAMATERS:
+ *   fs - file pointer
+ *
+ * RETURN VALUE:
+ *   SUCCESS - a pointer to the table is returned,
+ *   FAILURE - returns NULL
+ *
+ * POSTCONDITION:
+ *   The file offset will be different after use of the function.
+ *
+ * NOTES:
+ *   The pointer to the table should be freed when done.
  */
 part_entry* checkPartTable(FILE *fs);
 
@@ -47,27 +62,34 @@ part_entry* checkPartTable(FILE *fs);
 /* Checks that the path specified is valid and that the last item is
  *   a regular file. 
  *
- * PARAM:
+ * PARAMATERS:
  *   fs - the filestream that contains the filesystem
  *   inodeMap - the offset from the begining of the fs that the inodemap 
  *     starts on. 
  *   toInodes - the number of bytes to get from the begining
  *     of the inode map to the first inode.
  *
- * RETURN:
- *   not valid - returns a -1
- *   valid - returns the offset to the listed file's inode from the begining
+ * RETURN VALUE:
+ *   SUCCESS - returns a -1
+ *   FAILURE - returns the offset to the listed file's inode from the begining
  *      of the Inodes(Inode# * 64).
  */
 struct inode* fileChecker (FILE *fs, char* path, int inodeMap,int toInodes);
 
 
 /* Gets all of the data pointed to in the inode.
- * RETURN: 
- *   valid - a pointer to a buffer with all of it.
- *   invalid - NULL
+ *
+ * PARAMATERS:
+ *   cNode - 
+ *   fs - 
+ *   zonesize -
+ *   toDZones - 
+ *
+ * RETURN VALUE: 
+ *   SUCCESS - pointer to a buffer all the data read in.
+ *   FAILURE - returns NULL pointer
  */
-unsigned char* getiData (struct inode* cNode,FILE *fs, int zonesize, 
+unsigned char* getiData (struct inode *cNode, FILE *fs, int zonesize, 
 			 int toDZones);
 
 
