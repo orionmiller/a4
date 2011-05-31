@@ -55,7 +55,6 @@ part_entry* checkPartTable(FILE *fs)
       return NULL;
    }
 
-
 }
 
 

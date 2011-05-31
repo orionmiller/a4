@@ -10,6 +10,9 @@
 #define TOKELIB_H
 
 #include <string.h>
+#include <stdlib.h>
+#include "debug.h"
+#include <errno.h>
 
 #define FREE_TOK_SUCCESS 0
 #define FREE_TOK_FAILURE -1
@@ -37,7 +40,7 @@
  *   pointer should be freed (you can use freeTok() for that) else it will
  *   cause memory leaks.
  */
-int tokstr(char *str, char *delim);
+char ** tokstr(char *str, char *delim);
 
 
 /* Takes string and finds the number of tokens within that string.
@@ -55,8 +58,21 @@ int tokstr(char *str, char *delim);
  */
 int numOfTokens(char *str, char *delim);
 
-int freeTok(char *tok)
 
-int matchDelim(char c, char *delim, int delim_len);
+/* Checks to see if the given character mactches any of the characters
+ *   within the delim string.
+ * 
+ * PARAMATER:
+ *   c - the character that is being compared to the delim string
+ *   delim - the delimiter string
+ *
+ * RETURN:
+ *   number of tokens within the string
+ *   
+ * WARNING:
+ *   It is assumed that the string passed in is NULL terminated.
+ *   
+ */
+int matchDelim(char c, char *delim);
 
 #endif
