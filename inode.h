@@ -8,6 +8,8 @@
  * file systems and 'd2_inode' for V2 file systems.
  */
 
+#ifndef INODE_H
+#define INODE_H
 EXTERN struct inode {
   mode_t i_mode;		/* file type, protection, etc. */
   nlink_t i_nlinks;		/* how many links to this file */
@@ -42,3 +44,5 @@ EXTERN struct inode {
 #define I_MOUNT            1	/* i_mount is I_MOUNT if file mounted on */
 #define NO_SEEK            0	/* i_seek = NO_SEEK if last op was not SEEK */
 #define ISEEK              1	/* i_seek = ISEEK if last op was SEEK */
+
+#endif

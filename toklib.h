@@ -14,8 +14,7 @@
 #include "debug.h"
 #include <errno.h>
 
-#define FREE_TOK_SUCCESS 0
-#define FREE_TOK_FAILURE -1
+#define NO_DELIM 0
 
 #define TOKEN_STATE 0
 #define DELIM_STATE 1
@@ -50,11 +49,11 @@ char ** tokstr(char *str, char *delim);
  *   delim - the delimiter on the string
  *
  * RETURN:
- *   number of tokens within the string
+ *   Number of tokens within the string.
+ *   ERROR: If delim is NULL 0 is returned.
  *   
  * WARNING:
  *   It is assumed that the strings passed in are NULL terminated.
- *   
  */
 int numOfTokens(char *str, char *delim);
 
@@ -67,11 +66,11 @@ int numOfTokens(char *str, char *delim);
  *   delim - the delimiter string
  *
  * RETURN:
- *   number of tokens within the string
+ *   Number of tokens within the string.
+ *   ERROR: If delim is NULL 0 is returned.
  *   
  * WARNING:
  *   It is assumed that the string passed in is NULL terminated.
- *   
  */
 int matchDelim(char c, char *delim);
 

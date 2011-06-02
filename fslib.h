@@ -10,18 +10,22 @@
 #include <stdio.h>
 #include <unistd.h>
 
+
 #include "partition.h"
+/*
 #include "super.h"
 #include "inode.h"
-
+*/
 #include "debug.h"
 #include <string.h>
 #define BASICBLOCK 1024
 #define P_TABLE_SIZE 136
-#define 
 #define S_BLOCK_MAGIC 0x4D5A
 
 
+typedef union generic_block{
+  struct partition part;
+}block;
 
 /* Checks if there is a valid super block starting at byte 1024.
  * 
@@ -36,9 +40,9 @@
  *
  * NOTES:
  *   The pointer to the table should be freed when done.
- */
-super_block* checkSuperBlock(FILE *fs);
 
+super_block* checkSuperBlock(FILE *fs);
+*/
 
 /* Takes a file pointer and checks if there is a valid partition table
  *   at 0x1BE.
@@ -56,7 +60,7 @@ super_block* checkSuperBlock(FILE *fs);
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-part_entry* checkPartTable(FILE *fs);
+block* getPartTable(FILE *fs);
 
 /* may change to return a regular or directory file*/
 /* Checks that the path specified is valid and that the last item is
@@ -73,9 +77,9 @@ part_entry* checkPartTable(FILE *fs);
  *   SUCCESS - returns a -1
  *   FAILURE - returns the offset to the listed file's inode from the begining
  *      of the Inodes(Inode# * 64).
- */
-struct inode* fileChecker (FILE *fs, char* path, int inodeMap,int toInodes);
 
+struct inode* fileChecker (FILE *fs, char* path, int inodeMap,int toInodes);
+ */
 
 /* Gets all of the data pointed to in the inode.
  *
@@ -88,10 +92,10 @@ struct inode* fileChecker (FILE *fs, char* path, int inodeMap,int toInodes);
  * RETURN VALUE: 
  *   SUCCESS - pointer to a buffer all the data read in.
  *   FAILURE - returns NULL pointer
- */
+
 unsigned char* getiData (struct inode *cNode, FILE *fs, int zonesize, 
 			 int toDZones);
-
+ */
 
 
 #endif

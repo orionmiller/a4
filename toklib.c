@@ -77,6 +77,9 @@ int numOfTokens(char *str, char *delim)
   int state = DELIM_STATE, old_state = DELIM_STATE;
   int tok_num = 0;
 
+  if (delim == NULL)
+    return NO_DELIM;
+
   for (; str[str_pos] != '\0'; str_pos++)
     {
       state = matchDelim(str[str_pos], delim);
@@ -99,7 +102,7 @@ int matchDelim(char c, char *delim)
 {
   char pos;
   if (delim == NULL)
-    return -1;
+    return NO_DELIM;
 
   for (pos = 0; delim[pos] != '\0'; pos++)
     {

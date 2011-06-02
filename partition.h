@@ -1,17 +1,19 @@
-/* Description of entry in partition table.  */
+/*Structure Given from Assignment 4 Sec*/
+
+
 #ifndef _PARTITION_H
 #define _PARTITION_H
 
-struct part_entry {
+struct partition {
   unsigned char bootind;	/* boot indicator 0/ACTIVE_FLAG	 */
   unsigned char start_head;	/* head value for first sector	 */
   unsigned char start_sec;	/* sector value + cyl bits for first sector */
   unsigned char start_cyl;	/* track value for first sector	 */
-  unsigned char sysind;		/* system indicator		 */
-  unsigned char last_head;	/* head value for last sector	 */
-  unsigned char last_sec;	/* sector value + cyl bits for last sector */
-  unsigned char last_cyl;	/* track value for last sector	 */
-  unsigned long lowsec;		/* logical first sector		 */
+  unsigned char type;
+  unsigned char end_head;	/* head value for last sector	 */
+  unsigned char end_sec;	/* sector value + cyl bits for last sector */
+  unsigned char end_cyl;	/* track value for last sector	 */
+  unsigned long lFirst;		/* logical first sector		 */
   unsigned long size;		/* size of partition in sectors	 */
 };
 
@@ -22,5 +24,11 @@ struct part_entry {
 /* Partition types. */
 #define NO_PART		0x00	/* unused entry */
 #define MINIX_PART	0x81	/* Minix partition type */
+
+/*Partition Signatures */
+#define PART_SIG_1 0x55
+#define PART_SIG_1_OFF 510
+#define PART_SIG_2 0xAA
+#define PART_SIG_2_OFF 511
 
 #endif /* _PARTITION_H */
