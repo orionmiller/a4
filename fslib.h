@@ -12,7 +12,8 @@
 #include <string.h>
 #include <stdint.h>
 
-
+#include "super.h"
+#include "inode.h"
 #include "partition.h"
 /*
 #include "super.h"
@@ -27,24 +28,27 @@
 
 typedef union generic_block{
   struct partition part;
+  struct super_block s_block;
 }block;
 
-/* Checks if there is a valid super block starting at byte 1024.
+/* Takes a file pointer and checks if there is a valid super block starting 
+ *   at byte 1024. If it is valid it returns the super block data.
  * 
  * PARAMATER:
  *   fs - takes a file pointer to check the super block of.
  *
- * RETURN: On success it returns a pointer to the super block on failure
- *   returns NULL.
+ * RETURN:
+ *   SUCCESS -  pointer to union super block
+ *   FAILURE - returns NULL.
  * 
  * POSTCONDITION:
  *   The file offset will be different after use of the function.
  *
  * NOTES:
  *   The pointer to the table should be freed when done.
+ */
+block * getSuperBlock(FILE *fs);
 
-super_block* checkSuperBlock(FILE *fs);
-*/
 
 /* Takes a file pointer and checks if there is a valid partition table
  *   at 0x1BE + offset and returns the partition table data.
@@ -63,7 +67,7 @@ super_block* checkSuperBlock(FILE *fs);
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-block* getPartTable(FILE *fs, uint8_t part_off);
+block * getPartTable(FILE *fs, uint8_t part_off);
 
 
 /* Checks to make sure fread() did not return an EOF or set ERRNO.

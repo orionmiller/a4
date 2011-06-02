@@ -41,25 +41,22 @@ int main(int argc, char *argv[])
       printf("minls [-v] [-p part [-s subpart]] imagefile [path]\n");
       exit(EXIT_FAILURE);
     }
-
-  /*options check*/
-  if (Opt->verbose)
-    {
-      printf("verbosity is on\n");
-    }
-  if (Opt->part_off != -1)
-    {
-      printf("partition offset: %d\n", Opt->part_off);
-    }
-  if (Opt->subpart_off != -1)
-    {
-      printf("sub partition offset: %d\n", Opt->subpart_off);
-    }
   
   printf("imagefile: \'%s\'\n", Opt->imagefile);
   printf("path: \'%s\'\n", Opt->path);
 
   FATALCALL((fs = fopen(Opt->imagefile, "rb"))==NULL,"fopen");
+  if((Block = getSuperBlock(fs))==NULL)
+    {
+      fprintf(stderr, "Super Block Error\n");
+      fclose(fs);
+      exit(EXIT_FAILURE);
+    }
+  else
+    {
+      printf("Valid Super Block\n");
+    }
+  /*
   if((Block = getPartTable(fs, 0))==NULL)
     {
       fprintf(stderr, "Partition Table Error\n");
@@ -72,6 +69,7 @@ int main(int argc, char *argv[])
       printf("Parition Type: 0x%x\n", Block->part.type);
       free(Block);
     }
+  */
   fclose(fs);
   free(Opt);
   return EXIT_SUCCESS;
@@ -148,3 +146,19 @@ options * handleOptions(int argc, char *argv[])
 
   return Opt;
 }
+
+
+  /*options check
+  if (Opt->verbose)
+    {
+      printf("verbosity is on\n");
+    }
+  if (Opt->part_off != -1)
+    {
+      printf("partition offset: %d\n", Opt->part_off);
+    }
+  if (Opt->subpart_off != -1)
+    {
+      printf("sub partition offset: %d\n", Opt->subpart_off);
+    }
+  */

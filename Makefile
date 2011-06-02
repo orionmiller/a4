@@ -2,6 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g 
 
 GET_SRCS = fslib.c minget.c
+GET_HDRS = fslib.h inode.h
 
 all: minget #fs minls minget
 
@@ -25,7 +26,7 @@ handin:
 #	@echo "add personal test bench"
 
 clean: 
-	@rm *~ *.0
+	@rm *~ *.o
 
 allclean:
 	@rm *~ *.o minls minget

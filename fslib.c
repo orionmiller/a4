@@ -73,7 +73,7 @@ block* getPartTable(FILE *fs, uint8_t ptable_off)
   return Block;
 }
 
-
+/*try to rename */
 int  correctRead(size_t read_size, size_t correct_size, FILE *fs)
 {
   if (read_size != correct_size)
@@ -93,4 +93,27 @@ int  correctRead(size_t read_size, size_t correct_size, FILE *fs)
       return 0;
     }
   return 1;
+}
+
+block * getSuperBlock(FILE *fs)
+{
+  block *Block;
+  size_t read_size;
+
+  FATALCALL((Block=(block *)malloc(S_BLOCK_SIZE))==NULL,"super block: malloc");
+
+  /*Check Super Block - Magic Num Below*/
+  FATALCALL(fseek(fs, S_BLOCK_OFF, SEEK_SET)==-1,"partition fseek");
+  read_size = fread((block *)Block, 1, S_BLOCK_SIZE, fs); /*magic number*/
+  if (!correctRead(read_size, S_BLOCK_SIZE, fs))
+    return NULL;
+
+  if(Block->s_block.magic != S_BLOCK_MAGIC_LITTLE)
+    {
+      fprintf(stderr, "Super Block - Bad Magic Number");
+      fprintf(stderr, "(0x%.2X)\n",Block->s_block.magic);
+      return NULL;
+    }
+
+  return Block;
 }
