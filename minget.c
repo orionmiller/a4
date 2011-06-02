@@ -1,15 +1,25 @@
+/* Authors: Geoffrey Lawson, Orion Miller
+ * Class: CPE 453
+ * Assignment 4
+ *
+ * Main Function for minget and arguments parsing.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "fslib.h"
 #include "debug.h"
 #include <getopt.h>
+#include <unistd.h>
+
+
 
 #define OPT_STR "psv"
 #define OPTIONS_SIZE (sizeof(struct param_options))
 
 typedef struct param_options {
-  uint8_t part_off;
-  uint8_t subpart_off;
+  int8_t part_off;
+  int8_t subpart_off;
   uint8_t verbose;
   char * imagefile;
   char * path;
@@ -24,12 +34,31 @@ int main(int argc, char *argv[])
   block *Block;
   options *Opt;
   FILE *fs;
-  
+
+
   if ((Opt = handleOptions(argc, argv))==NULL)
     {
       printf("minls [-v] [-p part [-s subpart]] imagefile [path]\n");
+      exit(EXIT_FAILURE);
+    }
+
+  /*options check*/
+  if (Opt->verbose)
+    {
+      printf("verbosity is on\n");
+    }
+  if (Opt->part_off != -1)
+    {
+      printf("partition offset: %d\n", Opt->part_off);
+    }
+  if (Opt->subpart_off != -1)
+    {
+      printf("sub partition offset: %d\n", Opt->subpart_off);
     }
   
+  printf("imagefile: \'%s\'\n", Opt->imagefile);
+  printf("path: \'%s\'\n", Opt->path);
+
   FATALCALL((fs = fopen(Opt->imagefile, "rb"))==NULL,"fopen");
   if((Block = getPartTable(fs, 0))==NULL)
     {
@@ -44,6 +73,7 @@ int main(int argc, char *argv[])
       free(Block);
     }
   fclose(fs);
+  free(Opt);
   return EXIT_SUCCESS;
 }
 
@@ -52,6 +82,8 @@ options * handleOptions(int argc, char *argv[])
 {
   uint32_t opt;
   options *Opt;
+  extern int optind;
+  uint32_t non_opt_args = argc; /*number of non - option arguments*/
 
   FATALCALL((Opt=(options *)malloc(OPTIONS_SIZE))==NULL, "malloc");
   Opt->part_off = -1;
@@ -65,43 +97,50 @@ options * handleOptions(int argc, char *argv[])
       switch (opt)
 	{
 	case 'v':
+	  non_opt_args -= 1;
 	  Opt->verbose = 1;
 	  break;
 
 	case 'p':
-	  if (atoi(optarg) < 0 || atoi(optarg) > 3)
+	  non_opt_args -= 2;
+	  if (atoi(argv[optind]) < 0 || atoi(argv[optind]) > 3)
 	    return NULL;
-	  Opt->part_off = atoi(optarg);
+	  Opt->part_off = atoi(argv[optind]);
 	  break;
 
 	case 's':
-	  if (atoi(optarg) < 0 || atoi(optarg) > 3)
+	  non_opt_args -= 2;
+	  if (atoi(argv[optind]) < 0 || atoi(argv[optind]) > 3)
 	    return NULL;
-	  Opt->subpart_off = atoi(optarg);
+	  Opt->subpart_off = atoi(argv[optind]);
 	  break;
 
 	default:
 	  return NULL;
+	  break;
 	}
     }
 
-  if (Opt->subpart_off != -1 && Opt->part_off == -1)
-    return NULL;
 
-  switch (argc)
+  if (Opt->subpart_off != -1 && Opt->part_off == -1)
     {
-    case 1:
-      Opt->imagefile = argv[1];
+      return NULL;
+    }
+
+  switch (non_opt_args)
+    {
+    case 2: /*imagefile is only provided by user*/
+      Opt->imagefile = argv[argc-1];
       FATALCALL((Opt->path=(char *)calloc(2*sizeof(char), 
         2*sizeof(char)))==NULL, "calloc");
       Opt->path[0] = '/';
       break;
 
-    case 2:
-      Opt->imagefile = argv[1];
-      Opt->path = argv[2];
+    case 3: /*imigfile and path is provided by user*/
+      Opt->imagefile = argv[argc-2];
+      Opt->path = argv[argc-1];
       break;
-     
+
     default:
       return NULL;
       break;
