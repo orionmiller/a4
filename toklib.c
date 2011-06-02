@@ -10,17 +10,17 @@
 
 char ** tokstr(char *str, char *delim) /*used to ret (char *) */
 {
-  unsigned int str_pos = 0;
-  /*unsigned int str_len = 0;
-  unsigned int delim_pos = 0;
-  unsigned int delim_len = 0;*/
-  unsigned int tok_num = 1;
-  unsigned int tok_start = 0;
-  unsigned int tok_end = 0;
-  unsigned int tok_size = 0;
-  unsigned int tok_pos = 0; 
+  uint32_t str_pos = 0;
+  /*uint32_t str_len = 0;
+  uint32_t delim_pos = 0;
+  uint32_t delim_len = 0;*/
+  uint32_t tok_num = 1;
+  uint32_t tok_start = 0;
+  uint32_t tok_end = 0;
+  uint32_t tok_size = 0;
+  uint32_t tok_pos = 0; 
   char ** token = NULL;
-  int state = DELIM_STATE, old_state = DELIM_STATE;
+  int32_t state = DELIM_STATE, old_state = DELIM_STATE;
   
   /* CHECK ARGUMENTS / INIT VARS */
   if (str == NULL || delim == NULL)
@@ -73,9 +73,9 @@ char ** tokstr(char *str, char *delim) /*used to ret (char *) */
 
 int numOfTokens(char *str, char *delim)
 {
-  unsigned int str_pos = 0;
-  int state = DELIM_STATE, old_state = DELIM_STATE;
-  int tok_num = 0;
+  uint32_t str_pos = 0;
+  int32_t state = DELIM_STATE, old_state = DELIM_STATE;
+  int32_t tok_num = 0;
 
   if (delim == NULL)
     return NO_DELIM;
@@ -100,7 +100,7 @@ int numOfTokens(char *str, char *delim)
 
 int matchDelim(char c, char *delim)
 {
-  char pos;
+  uint8_t pos;
   if (delim == NULL)
     return NO_DELIM;
 
