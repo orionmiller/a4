@@ -4,44 +4,93 @@
  */
 
 #include "fslib.h"
-#include <unistd.h>
+
 #include "partition.h"
 
-block* getPartTable(FILE *fs)
+block* getPartTable(FILE *fs, uint8_t ptable_off)
 {
   /*set offset to beginning of file
-   *read in 512 bytes
-   *IF not 512 bytes or error report error & exit
    *else check partition table
    *checkf for partition signatures
    *check for minix partition type
    *
    */
 
-  block *PartBlock;
+  block *Block;
   size_t read_size;
-  FATALCALL((PartBlock=(block *)malloc(sizeof(struct partition)))==NULL,"partition: malloc");
-  printf("Getting/Checking Partition\n");
-  FATALCALL(fseek(fs, PART_TABLE_OFF , SEEK_SET)==-1,"partition fseek");
-  printf("Seeked file\n");
-  printf("Struct Partition Size: %lo\n", sizeof(struct partition));
-  read_size = fread((block *)PartBlock, sizeof(struct partition), sizeof(unsigned char), fs);
-  printf("Read file | read_size: %lo\n", read_size);
-  if (read_size != sizeof(struct partition))
+  uint8_t ptable_sig = 0;
+  uint32_t ptable_pos;
+
+  if (ptable_off < 0 || ptable_off > 3)
+    {
+      fprintf(stderr, "Partition # %u is invalid.\n", ptable_off);
+      return NULL;
+    }
+
+  ptable_pos = ptable_off * P_TABLE_SIZE + PART_TABLE_BASE;
+
+  FATALCALL((Block=(block *)malloc(P_TABLE_SIZE))==NULL,"partition: malloc");
+
+  /*Check Partition Signature 1 - Magic Num Below*/
+  FATALCALL(fseek(fs, PART_SIG_1_OFF , SEEK_SET)==-1,"partition fseek");
+  read_size = fread((unsigned char *)&ptable_sig, 1, sizeof(unsigned char), fs);
+  if (!correctRead(read_size, sizeof(unsigned char), fs))
+    return NULL;
+  if (ptable_sig != PART_SIG_1)
+    {
+      fprintf(stderr, "Incorrect Partition Signature at %lX\n", ftell(fs));
+      fprintf(stderr, "Value: 0x%x\n", ptable_sig);
+      return NULL;
+    }
+
+  /*Check Partition Signature 2 - Magic Num Below*/
+  FATALCALL(fseek(fs, PART_SIG_2_OFF , SEEK_SET)==-1,"partition fseek");
+  read_size = fread((unsigned char *)&ptable_sig, 1, sizeof(unsigned char), fs);
+  if (!correctRead(read_size, sizeof(unsigned char), fs))
+    return NULL;
+  if (ptable_sig != PART_SIG_2)
+    {
+      fprintf(stderr, "Incorrect Partition Signature at %lX\n", ftell(fs));
+      fprintf(stderr, "Value: 0x%x\n", ptable_sig);
+      return NULL;
+    }
+
+  /*Read in Partition Table - Magic Num Below*/
+  FATALCALL(fseek(fs, ptable_pos, SEEK_SET)==-1,"partition fseek");
+  read_size = fread((block *)Block, 1, P_TABLE_SIZE, fs); /*magic number*/
+  if (!correctRead(read_size, P_TABLE_SIZE,fs))
+    return NULL;
+  
+
+  /*Check Partition Table*/
+
+  if (Block->part.type != MINIX_PART)
+    {
+      fprintf(stderr, "Not Minix Part - Type: (0x%x)\n", Block->part.type);
+      return NULL;
+    }
+
+  return Block;
+}
+
+
+int  correctRead(size_t read_size, size_t correct_size, FILE *fs)
+{
+  if (read_size != correct_size)
     {
       if (feof(fs))
 	{
-	  fprintf(stderr, "Not enough space for partition table and or a disk image\n");
+	  fprintf(stderr, "Disk is the wrong size.\n");
 	}
       else if (ferror(fs))
 	{
-	  perror("partition: fread error");
+	  perror("getPartTable(): fread error");
 	}
       else 
 	{
-	  fprintf(stderr, "Something terrible happened (ferror & feof not set.\n");
+	  fprintf(stderr, "Unknown Error (ferror & feof not set.)\n");
 	}
-      return NULL;
+      return 0;
     }
-  return PartBlock;
+  return 1;
 }

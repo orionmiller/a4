@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdint.h>
 
 
 #include "partition.h"
@@ -17,9 +19,9 @@
 #include "inode.h"
 */
 #include "debug.h"
-#include <string.h>
+
 #define BASICBLOCK 1024
-#define P_TABLE_SIZE 136
+
 #define S_BLOCK_MAGIC 0x4D5A
 
 
@@ -45,13 +47,14 @@ super_block* checkSuperBlock(FILE *fs);
 */
 
 /* Takes a file pointer and checks if there is a valid partition table
- *   at 0x1BE.
+ *   at 0x1BE + offset and returns the partition table data.
  * 
  * PARAMATERS:
  *   fs - file pointer
+ *   part_off - the partition table offset
  *
  * RETURN VALUE:
- *   SUCCESS - a pointer to the table is returned,
+ *   SUCCESS - a pointer to the partition table data is returned
  *   FAILURE - returns NULL
  *
  * POSTCONDITION:
@@ -60,7 +63,25 @@ super_block* checkSuperBlock(FILE *fs);
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-block* getPartTable(FILE *fs);
+block* getPartTable(FILE *fs, uint8_t part_off);
+
+
+/* Checks to make sure fread() did not return an EOF or set ERRNO.
+ *  
+ * PARAMATERS:
+ *   read_size = the read in size from fread().
+ *   correct_size = the size fread() should have returned.
+ *   fs - file pointer
+ *
+ * RETURN VALUE:
+ *   SUCCESS - returns 1
+ *   FAILURE - returns 0
+ *
+ * NOTES:
+ *   The file should be closed when it is no longer needed.
+ */
+int  correctRead(size_t read_size, size_t correct_size, FILE *fs);
+
 
 /* may change to return a regular or directory file*/
 /* Checks that the path specified is valid and that the last item is
