@@ -7,10 +7,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "fslib.h"
-#include "debug.h"
 #include <getopt.h>
 #include <unistd.h>
+
+#include "fslib.h"
+#include "debug.h"
 
 
 #define OPT_STR "psv"
@@ -27,15 +28,31 @@ typedef struct param_options {
 
 options * handleOptions(int argc, char *argv[]);
 
+void printFile(FILE *output, uint8_t *data, uint32_t data_size)
+{
+ uint32_t pos;
+
+ for (pos = 0; pos < data_size; pos++)
+   {
+     fprintf(output, "%c", data[pos]);
+   }
+ fflush(output);
+}
 
 int main(int argc, char *argv[])
 {
   s_block *S_block;
-  p_table *P_table;
-  inode *Inode;
+  p_table *P_table=NULL;
+  inode *Inode = NULL;
   options *Opt;
   FILE *fs;
-  uint32_t offset; 
+  FILE *output; /*where all the data will be outputed*/
+  uint32_t part_start; /*beginning file system*/
+  uint32_t inode_off; /*beginning of inode zone*/
+  uint32_t zone_size;
+  uint8_t *data = NULL;
+  char **path;
+ 
 
   if ((Opt = handleOptions(argc, argv))==NULL)
     {
@@ -51,54 +68,61 @@ int main(int argc, char *argv[])
       free(S_block);
       exit(EXIT_FAILURE);
     }
-  /*needed data from super block
-   * block_size
-   * zone_size 
-   */
+
   /*inode-pos = (2+imap_block+zmap_block)*blocksize;*/
   /*zone size = blocksize << log_zone_size*/
   /*data-pos = firstdatazone * zonesize*/
 
-
-  /*if valid partition num
-   *  get partition table 
-   *    find start of part (part_off in relation to beginning of file)
-   *    check super block
-   *    find zone size
-   *    find inode-offset
-   */
-   
-
-
-
-  /*if valid partition number & subpartition num
-   *   get partition table
-   *    find start of part (part_off in relation to beginning of file)
-   *       check super block
-   *       get sub partion table
-   *          find start of part (part_off in relation to beginning of file)
-   *          check super block
-   *          find zone size
-   *          find inode-offset
-   */
-
-  if (Opt->part_num > -1 && Opt->part_num < 4)
+  if (Opt->part_num == -1 && Opt->subpart_num == -1) /*no partition or subpartition*/
     {
-      P_table = getPartTable(fs, 0, Opt->part_num); /*MAGIC NUMBER*/
-      if (!S_block)
-	{
-	  fprintf(stderr, "Partition Table Error\n");
-	  exit(EXIT_FAILURE);
-	}
-      printf("Partition Size: %u\n", P_table->size);
+      zone_size = S_block->block_size << S_block->log_zone_size;
+      inode_off = (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
+      part_start = 0;
+      output = stdout;
+    }
+  else if (0) /*partition but no subpartition*/
+    {
+      /*if valid partition num
+       *  get partition table 
+       *    check super block
+       *    find start of part (part_off in relation to beginning of file)
+       *    check super block
+       *    find zone size
+       *    find inode-offset
+       */
+    }
+  else if (0) /* partition and subpartition */
+    {
+      /*if valid partition number & subpartition num
+       *   get partition table
+       *    find start of part (part_off in relation to beginning of file)
+       *       check super block
+       *       get sub partion table
+       *          check super block
+       *          find start of part (part_off in relation to beginning of file)
+       *          find zone size
+       *          find inode-offset
+       */
+    }
+  else
+    {
+      printf("Bad Stuff\n"); /*change*/
+    }
+  path =tokstr(Opt->path, "/");
+  if ((Inode = getFile(fs, path, inode_off, part_start, zone_size))==NULL)
+    {
+      fprintf(stderr, "File Doesn't Exist\n");
+      exit(EXIT_FAILURE);
     }
 
-  /*acquire sub partition stuff*/
-
-  
+  getData(fs, data, Inode, part_start, zone_size);
+  printFile(output, data, Inode->size);  
 
   fclose(fs); /*check for errors*/
-  free(P_table);
+  if(P_table!=NULL)
+    {  
+      free(P_table);
+    }
   free(Opt);
   free(S_block);
   return EXIT_SUCCESS;
@@ -217,5 +241,18 @@ options * handleOptions(int argc, char *argv[])
       printf("Is a partition!\n");
       printf("Parition Type: 0x%x\n", Block->part.type);
 
+    }
+  */
+
+  /*
+  if (Opt->part_num > -1 && Opt->part_num < 4)
+    {
+      P_table = getPartTable(fs, 0, Opt->part_num);
+      if (!S_block)
+	{
+	  fprintf(stderr, "Partition Table Error\n");
+	  exit(EXIT_FAILURE);
+	}
+      printf("Partition Size: %u\n", P_table->size);
     }
   */

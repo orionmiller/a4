@@ -15,6 +15,7 @@
 #include "super.h"
 #include "inode.h"
 #include "partition.h"
+#include "toklib.h"
 /*
 #include "super.h"
 #include "inode.h"

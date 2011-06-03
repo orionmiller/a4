@@ -8,12 +8,10 @@
 
 #include "toklib.h"
 
+
 char ** tokstr(char *str, char *delim) /*used to ret (char *) */
 {
   uint32_t str_pos = 0;
-  /*uint32_t str_len = 0;
-  uint32_t delim_pos = 0;
-  uint32_t delim_len = 0;*/
   uint32_t tok_num = 1;
   uint32_t tok_start = 0;
   uint32_t tok_end = 0;

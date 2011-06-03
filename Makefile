@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -g 
 
-GET_SRCS = fslib.c minget.c
-GET_HDRS = fslib.h inode.h
+GET_SRCS = fslib.c minget.c toklib.c
+GET_HDRS = fslib.h inode.h toklib.h
 
 all: minget #fs minls minget
 

@@ -11,8 +11,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "debug.h"
 #include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
+
+#include "debug.h"
 
 #define NO_DELIM 0
 
