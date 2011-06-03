@@ -4,6 +4,8 @@
 
 #define NUM_ZONES 7
 #define INODE_SIZE sizeof(struct inode_)
+#define ZONE_PTR_SIZE sizeof(uint32_t)
+#define ROOT_INODE_NUM
 
 typedef struct inode_ {
   uint16_t mode;		/* mode_t - file type, protection, etc. */

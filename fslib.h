@@ -26,7 +26,7 @@
 #define S_BLOCK_MAGIC 0x4D5A
 #define FILENAME_SIZE 60
 #define INODE_NUM_SIZE sizeof(uint32_t)
-#define FILE_ENTRY_SIZE (FILENAME_SIZE+INODE_NUM_SIZE)
+#define DIR_ENTRY_SIZE (FILENAME_SIZE+INODE_NUM_SIZE)
 
 typedef union generic_block{
   struct partition p_table;
