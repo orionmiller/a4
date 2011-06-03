@@ -45,7 +45,7 @@
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-p_table * getSuperBlock(FILE *fs, uint32_t offset);
+s_block* getSuperBlock(FILE *fs, uint32_t offset);
 
 /* Takes a file pointer and checks if there is a valid partition table
  *   at 0x1BE + offset and returns the partition table data.
@@ -64,15 +64,15 @@ p_table * getSuperBlock(FILE *fs, uint32_t offset);
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-s_block getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num);
+p_table* getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num);
 
 inode * getFile(FILE *fs, char ** path, uint32_t inode_off, uint32_t part_off, uint32_t zone_size);
 
 void getInode(inode * Inode, uint32_t inode_num, uint32_t inode_off, FILE *fs);
-uint32_t existsInPath(uint8_t * dir_data, uint32_t dir_size, uint8_t *filename);
+uint32_t existsInPath(uint8_t * dir_data, uint32_t dir_size, char *filename);
 void getData(FILE *fs, uint8_t *data, inode *Inode, uint32_t part_off, uint32_t zone_size);
 void getDirectZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs);
-void getIndrZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs);
-void getDblZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs);
+void getIndrZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs, uint32_t num_zones);
+void getDblZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs, uint32_t num_zones);
 
 #endif

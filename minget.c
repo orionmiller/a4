@@ -20,8 +20,8 @@ typedef struct param_options {
   int16_t part_num;
   int16_t subpart_num;
   uint8_t verbose;
-  uint8_t *imagefile;
-  uint8_t *path;
+  char *imagefile;
+  char *path;
 }options;
 
 
@@ -67,6 +67,10 @@ int main(int argc, char *argv[])
    *    find zone size
    *    find inode-offset
    */
+   
+
+
+
   /*if valid partition number & subpartition num
    *   get partition table
    *    find start of part (part_off in relation to beginning of file)
@@ -80,7 +84,7 @@ int main(int argc, char *argv[])
 
   if (Opt->part_num > -1 && Opt->part_num < 4)
     {
-      S_block = getPartTable(fs, 0, Opt->part_num); /*MAGIC NUMBER*/
+      P_table = getPartTable(fs, 0, Opt->part_num); /*MAGIC NUMBER*/
       if (!S_block)
 	{
 	  fprintf(stderr, "Partition Table Error\n");
@@ -109,8 +113,8 @@ options * handleOptions(int argc, char *argv[])
   uint32_t non_opt_args = argc; /*number of non - option arguments*/
 
   FATALCALL((Opt=(options *)malloc(OPTIONS_SIZE))==NULL, "malloc");
-  Opt->part_off = -1;
-  Opt->subpart_off = -1;
+  Opt->part_num = -1;
+  Opt->subpart_num = -1;
   Opt->verbose = 0;
   Opt->imagefile = NULL;
   Opt->path = NULL;
@@ -128,14 +132,14 @@ options * handleOptions(int argc, char *argv[])
 	  non_opt_args -= 2;
 	  if (atoi(argv[optind]) < 0 || atoi(argv[optind]) > 3)
 	    return NULL;
-	  Opt->part_off = atoi(argv[optind]);
+	  Opt->part_num = atoi(argv[optind]);
 	  break;
 
 	case 's':
 	  non_opt_args -= 2;
 	  if (atoi(argv[optind]) < 0 || atoi(argv[optind]) > 3)
 	    return NULL;
-	  Opt->subpart_off = atoi(argv[optind]);
+	  Opt->subpart_num = atoi(argv[optind]);
 	  break;
 
 	default:
@@ -145,7 +149,7 @@ options * handleOptions(int argc, char *argv[])
     }
 
 
-  if (Opt->subpart_off != -1 && Opt->part_off == -1)
+  if (Opt->subpart_num != -1 && Opt->part_num == -1)
     {
       return NULL;
     }

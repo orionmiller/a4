@@ -19,7 +19,7 @@ typedef struct partition_table {
   uint32_t size;		/* size of partition in sectors	 */
 }p_table;
 
-#define P_TABLE_SIZE sizeof(struct partition)
+#define P_TABLE_SIZE sizeof(p_table)
 
 #define ACTIVE_FLAG	0x80	/* value for active in bootind field (hd0) */
 #define NR_PARTITIONS	4	/* number of entries in partition table */
