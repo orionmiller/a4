@@ -25,13 +25,9 @@
 
 #define S_BLOCK_MAGIC 0x4D5A
 #define FILENAME_SIZE 60
-#define INODE_NUM_SIZE sizeof(uint32_t)
+#define INODE_NUM_SIZE (sizeof(uint32_t))
 #define DIR_ENTRY_SIZE (FILENAME_SIZE+INODE_NUM_SIZE)
-
-typedef union generic_block{
-  struct partition p_table;
-  struct super_block s_block;
-}block;
+#define BYTE (sizeof(uint8_t))
 
 /* Takes a file pointer and checks if there is a valid super block starting 
  *   at byte 1024. If it is valid it returns the super block data.
@@ -49,7 +45,7 @@ typedef union generic_block{
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-block * getSuperBlock(FILE *fs, uint32_t offset);
+p_table * getSuperBlock(FILE *fs, uint32_t offset);
 
 /* Takes a file pointer and checks if there is a valid partition table
  *   at 0x1BE + offset and returns the partition table data.
@@ -68,60 +64,15 @@ block * getSuperBlock(FILE *fs, uint32_t offset);
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-block* getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num);
+s_block getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num);
 
+inode * getFile(FILE *fs, char ** path, uint32_t inode_off, uint32_t part_off, uint32_t zone_size);
 
-/* Checks to make sure fread() did not return an EOF or set ERRNO.
- *  
- * PARAMATERS:
- *   read_size = the read in size from fread().
- *   correct_size = the size fread() should have returned.
- *   fs - file pointer
- *
- * RETURN VALUE:
- *   SUCCESS - returns 1
- *   FAILURE - returns 0
- *
- * NOTES:
- *   The file should be closed when it is no longer needed.
- */
-int  correctRead(size_t read_size, size_t correct_size, FILE *fs);
-
-
-/* may change to return a regular or directory file*/
-/* Checks that the path specified is valid and that the last item is
- *   a regular file. 
- *
- * PARAMATERS:
- *   fs - the filestream that contains the filesystem
- *   inodeMap - the offset from the begining of the fs that the inodemap 
- *     starts on. 
- *   toInodes - the number of bytes to get from the begining
- *     of the inode map to the first inode.
- *
- * RETURN VALUE:
- *   SUCCESS - returns a -1
- *   FAILURE - returns the offset to the listed file's inode from the begining
- *      of the Inodes(Inode# * 64).
-
-struct inode* fileChecker (FILE *fs, char* path, int inodeMap,int toInodes);
- */
-
-/* Gets all of the data pointed to in the inode.
- *
- * PARAMATERS:
- *   cNode - 
- *   fs - 
- *   zonesize -
- *   toDZones - 
- *
- * RETURN VALUE: 
- *   SUCCESS - pointer to a buffer all the data read in.
- *   FAILURE - returns NULL pointer
-
-unsigned char* getiData (struct inode *cNode, FILE *fs, int zonesize, 
-			 int toDZones);
- */
-
+void getInode(inode * Inode, uint32_t inode_num, uint32_t inode_off, FILE *fs);
+uint32_t existsInPath(uint8_t * dir_data, uint32_t dir_size, uint8_t *filename);
+void getData(FILE *fs, uint8_t *data, inode *Inode, uint32_t part_off, uint32_t zone_size);
+void getDirectZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs);
+void getIndrZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs);
+void getDblZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs);
 
 #endif

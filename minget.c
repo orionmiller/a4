@@ -13,16 +13,15 @@
 #include <unistd.h>
 
 
-
 #define OPT_STR "psv"
 #define OPTIONS_SIZE (sizeof(struct param_options))
 
 typedef struct param_options {
-  int8_t part_off;
-  int8_t subpart_off;
+  int16_t part_num;
+  int16_t subpart_num;
   uint8_t verbose;
-  char * imagefile;
-  char * path;
+  uint8_t *imagefile;
+  uint8_t *path;
 }options;
 
 
@@ -31,12 +30,12 @@ options * handleOptions(int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
-  block *Block;
-  block *SBlock;
+  s_block *S_block;
+  p_table *P_table;
+  inode *Inode;
   options *Opt;
   FILE *fs;
-
-
+  uint32_t offset; 
 
   if ((Opt = handleOptions(argc, argv))==NULL)
     {
@@ -44,14 +43,12 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
     }
 
-
   FATALCALL((fs = fopen(Opt->imagefile, "rb"))==NULL,"fopen");
 
   /*check super block*/
-  if((SBlock = getSuperBlock(fs, 0)) == NULL) /*MAGIC NUMBER*/
+  if((S_block = getSuperBlock(fs, 0)) == NULL) /*MAGIC NUMBER*/
     {
-      printf("Bad Super Block.\n");
-      free(Block);
+      free(S_block);
       exit(EXIT_FAILURE);
     }
   /*needed data from super block
@@ -62,36 +59,44 @@ int main(int argc, char *argv[])
   /*zone size = blocksize << log_zone_size*/
   /*data-pos = firstdatazone * zonesize*/
 
-  /* root inode
-   *   - read in structure
-   * while (next file exists)
-   *    take in filename/inode #
-   *    grabe inode
-   *    while (zones are left take the zone offset)
-   *     - read zone data into malloc data
-   *    increment to next file in path
-   * return data;
+
+  /*if valid partition num
+   *  get partition table 
+   *    find start of part (part_off in relation to beginning of file)
+   *    check super block
+   *    find zone size
+   *    find inode-offset
    */
-  
-  if (Opt->part_off > -1 && Opt-> part_off < 4)
+  /*if valid partition number & subpartition num
+   *   get partition table
+   *    find start of part (part_off in relation to beginning of file)
+   *       check super block
+   *       get sub partion table
+   *          find start of part (part_off in relation to beginning of file)
+   *          check super block
+   *          find zone size
+   *          find inode-offset
+   */
+
+  if (Opt->part_num > -1 && Opt->part_num < 4)
     {
-      Block = getPartTable(fs, 0, Opt->part_off); /*MAGIC NUMBER*/
-      if (!Block)
+      S_block = getPartTable(fs, 0, Opt->part_num); /*MAGIC NUMBER*/
+      if (!S_block)
 	{
 	  fprintf(stderr, "Partition Table Error\n");
 	  exit(EXIT_FAILURE);
 	}
-      printf("Partition Size: %u\n", Block->p_table.size);
+      printf("Partition Size: %u\n", P_table->size);
     }
 
   /*acquire sub partition stuff*/
 
   
 
-  fclose(fs);
-  free(Block);
+  fclose(fs); /*check for errors*/
+  free(P_table);
   free(Opt);
-  free(SBlock);
+  free(S_block);
   return EXIT_SUCCESS;
 }
 

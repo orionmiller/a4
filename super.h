@@ -1,6 +1,7 @@
 #ifndef _SUPER_H
 #define _SUPER_H
-struct super_block {
+
+typedef struct super_block {
   uint32_t ninodes;		/* # usable inodes on the minor device */
   uint16_t nzones;		/* total device size, including bit maps etc */
   int16_t imap_blocks;		/* # of blocks used by inode bit map */
@@ -22,7 +23,7 @@ struct super_block {
   uint16_t block_size;	/* block size in bytes. */
   char disk_version;		/* filesystem format sub-version */
 
-};
+}s_block;
 
 /*#define NIL_SUPER (struct super_block *) 0*/
 #define S_BLOCK_BASE     1024                         /*Super Block File Offset*/

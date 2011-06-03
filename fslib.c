@@ -7,110 +7,79 @@
 
 #include "partition.h"
 
-block* getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num)
+p_table* getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num)
 {
-
-  block *Block;
+  p_table *P_table;
   size_t read_size;
-  uint8_t ptable_sig = 0;
+  uint8_t ptable_sig_1 = 0;
+  uint8_t ptable_sig_2 = 0;
   uint32_t ptable_pos;
 
  /*partition table position*/
   ptable_pos = offset + PART_TABLE_BASE + (p_table_num*P_TABLE_SIZE);
 
-  FATALCALL((Block=(block *)malloc(P_TABLE_SIZE))==NULL,"partition: malloc");
+  FATALCALL((P_table=(p_table *)malloc(P_TABLE_SIZE))==NULL,"partition: malloc");
 
   /*Check Partition Signature 1 - Magic Num Below*/
-  FATALCALL(fseek(fs, offset + PART_SIG_1_OFF , SEEK_SET)==-1,"partition fseek");
-  read_size = fread((unsigned char *)&ptable_sig, 1, sizeof(unsigned char), fs);
-  if (!correctRead(read_size, sizeof(unsigned char), fs))
-    return NULL;
-  if (ptable_sig != PART_SIG_1)
-    {
-      fprintf(stderr, "Incorrect Partition Signature at %lX\n", ftell(fs));
-      fprintf(stderr, "Value: 0x%x\n", ptable_sig);
-      return NULL;
-    }
+  FATALCALL(fseek(fs, offset + PART_SIG_1_OFF , SEEK_SET)==-1,"fseek");
+  FATALCALL(fread((uint8_t *)&ptable_sig_1, 1, BYTE, fs) < BYTE,"fread");
+
+
 
   /*Check Partition Signature 2 - Magic Num Below*/
-  FATALCALL(fseek(fs, offset + PART_SIG_2_OFF , SEEK_SET)==-1,"partition fseek");
-  read_size = fread((unsigned char *)&ptable_sig, 1, sizeof(unsigned char), fs);
-  if (!correctRead(read_size, sizeof(unsigned char), fs))
-    return NULL;
-  if (ptable_sig != PART_SIG_2)
+  FATALCALL(fseek(fs, offset + PART_SIG_2_OFF , SEEK_SET)==-1,"fseek");
+  FATALCALL(fread((uint8_t *)&ptable_sig, 1, BYTE, fs) < BYTE, "fread")
+
+  if (ptable_sig_1 != PART_SIG_1 || ptable_sig_2 != PART_SIG_2)
     {
-      fprintf(stderr, "Incorrect Partition Signature at %lX\n", ftell(fs));
-      fprintf(stderr, "Value: 0x%x\n", ptable_sig);
+      fprintf(stderr, "Incorrect Partition Signature(s)");
+      fprintf(stderr, "Signature at 510 is (0x%X)\n", ptable_sig_1);
+      fprintf(stderr, "Signature at 511 is (0x%X)\n", ptable_sig_2);
       return NULL;
     }
 
   /*Read in Partition Table*/
-  FATALCALL(fseek(fs, ptable_pos, SEEK_SET)==-1,"partition fseek");
-  read_size = fread((block *)Block, 1, P_TABLE_SIZE, fs); /*magic number*/
-  if (!correctRead(read_size, P_TABLE_SIZE,fs))
-    return NULL;
+  FATALCALL(fseek(fs, ptable_pos, SEEK_SET)==-1,"fseek");
+  FATALCALL(fread((p_table *)P_table, 1, P_TABLE_SIZE, fs) < P_TABLE_SIZE, "fread");
   
 
   /*Check Partition Table*/
-  if (Block->p_table.type != MINIX_PART)
+  if (P_table->type != MINIX_PART)
     {
-      fprintf(stderr, "Not Minix Part - Type: (0x%x)\n", Block->p_table.type);
+      fprintf(stderr, "Not Minix Part - Type: (0x%X)\n", P_table->type);
       return NULL;
     }
 
-  return Block;
+  return P_table;
 }
 
-/*try to rename */
-int  correctRead(size_t read_size, size_t correct_size, FILE *fs)
+s_block * getSuperBlock(FILE *fs, uint32_t offset)
 {
-  if (read_size != correct_size)
-    {
-      if (feof(fs))
-	{
-	  fprintf(stderr, "Disk is the wrong size.\n");
-	}
-      else if (ferror(fs))
-	{
-	  perror("getPartTable(): fread error");
-	}
-      else 
-	{
-	  fprintf(stderr, "Unknown Error (ferror & feof not set.)\n");
-	}
-      return 0;
-    }
-  return 1;
-}
-
-block * getSuperBlock(FILE *fs, uint32_t offset)
-{
-  block *Block;
+  s_block *S_block;
   size_t read_size;
 
-  FATALCALL((Block=(block *)malloc(S_BLOCK_SIZE))==NULL,"super block: malloc");
+  FATALCALL((S_block=(s_block *)malloc(S_BLOCK_SIZE))==NULL,"malloc");
 
   /*Check Super Block - Magic Num Below*/
-  FATALCALL(fseek(fs, offset + S_BLOCK_BASE, SEEK_SET)==-1,"partition fseek");
-  read_size = fread((block *)Block, 1, S_BLOCK_SIZE, fs); /*magic number*/
-  if (!correctRead(read_size, S_BLOCK_SIZE, fs))
-    return NULL;
+  FATALCALL(fseek(fs, offset + S_BLOCK_BASE, SEEK_SET)==-1,"fseek");
+  FATALCALL(fread((s_block *)S_block, 1, S_BLOCK_SIZE, fs) < S_BLOCK_SIZE, "fread");
 
-  if(Block->s_block.magic != S_BLOCK_MAGIC_LITTLE)
+  if(S_block->magic != S_BLOCK_MAGIC_LITTLE)
     {
       fprintf(stderr, "Super Block - Bad Magic Number");
-      fprintf(stderr, "(0x%.2X)\n",Block->s_block.magic);
+      fprintf(stderr, "(0x%.2X)\n",S_block->magic);
       return NULL;
     }
 
-  return Block;
+  return S_block;
 }
 
 inode * getFile(FILE *fs, char ** path, uint32_t inode_off, uint32_t part_off, uint32_t zone_size)
 {
   uint32_t inode_num = ROOT_INODE_NUM;
-  uint8_t * dir_data;
-  inode * Inode;
+  uint8_t *dir_data;
+  inode *Inode;
+  uint32_t i;
   FATALCALL((Inode=malloc(INODE_SIZE))==NULL,"malloc");
 
   getInode(Inode, ROOT_INODE_NUM, inode_off, fs);
@@ -150,10 +119,10 @@ uint32_t existsInPath(uint8_t * dir_data, uint32_t dir_size, uint8_t *filename)
 
   while((dir_entry_pos - dir_data) < dir_size)
     {
-      memcpy(dir_entry_pos,dir_entry_name,FILE_NAME_SIZE);
-      if(strncmp(dir_entry_name,filename,FILE_NAME_SIZE)==0)
+      memcpy(dir_entry_pos,dir_entry_name,FILENAME_SIZE);
+      if(strncmp(dir_entry_name,filename,FILENAME_SIZE)==0)
 	{
-	  memcpy(dir_entry_pos+FILE_NAME_SIZE, inode_num, INODE_NUM_SIZE);
+	  memcpy(dir_entry_pos+FILENAME_SIZE, inode_num, INODE_NUM_SIZE);
 	  return inode_num;
 	}
       dir_entry_pos += DIR_ENTRY_SIZE;
@@ -191,36 +160,6 @@ void getData(FILE *fs, uint8_t *data, inode *Inode, uint32_t part_off, uint32_t 
 } 
 
 
-
-
-/*
-uint8_t * getData(FILE *fs, uint8_t *data, inode *Inode, uint32_t data_zone_off, uint32_t zone_size)
-{
-  uint32_t filesize = Inode->size;
-  uint32_t num_zones = filesize / zone_size;
-  uint32_t current_zone;
-  if (filesize%zone_size > 0)
-    {
-      num_zones++;
-    }
-  FATALCALL((data=malloc(filesize))==NULL, "malloc");
-
-  for (current_zone = 0; current_zone < num_zones; current_zone++)
-    {
-      if (current_zone < 7)
-	{
-
-	}
-      else if (current_zone < )
-
-	}
-    }
-  return ;
-}
-
-*/
-
-
 void getDirectZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *current_zone, uint32_t zone_size, FILE *fs)
 {
   uint32_t file_pos = part_off + (zone_ptr * zone_size);
@@ -255,21 +194,10 @@ void getDblZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t *c
   /*may cause problems double check*/
   getDirectZone(indr_zone_ptr_block, zone_ptr, part_off, &dummy_curr_zone, zone_size, fs);
   
-  for(read=0; current_zone < num_zone && read < zone_size/; read++)
+  /*may be truncating division error*/
+  for(read=0; current_zone < num_zone && read < zone_size/INODE_SIZE; read++)
     {
       getDirectZone(data, indr_zone_ptr_block[read], part_off, current_zone, zone_size, fs);
     }
   free(indr_zone_ptr_block);
 }
-
-/*							       
-void getIndrZone(uint8_t *file, uint32_t current_file_zone, uint32_t data_zone_off, uint32_t current_data_zone, uint32_t zone_size, FILE *fs, uint32_t data_zone_num_off)
-{
-  uint32_t data_pos =data_zone_off + (
-}
-
-void getDblIndrZone(uint8_t *data, uint32_t current_zone, uint32_t *data_zone_off)
-{
-
-}
-*/

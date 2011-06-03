@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-struct partition {
+typedef struct partition_table {
   uint8_t bootind;	/* boot indicator 0/ACTIVE_FLAG	 */
   uint8_t start_head;	/* head value for first sector	 */
   uint8_t start_sec;	/* sector value + cyl bits for first sector */
@@ -17,7 +17,7 @@ struct partition {
   uint8_t end_cyl;	/* track value for last sector	 */
   uint32_t lFirst;		/* logical first sector		 */
   uint32_t size;		/* size of partition in sectors	 */
-};
+}p_table;
 
 #define P_TABLE_SIZE sizeof(struct partition)
 
