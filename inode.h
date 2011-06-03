@@ -1,9 +1,11 @@
 #ifndef INODE_H
 #define INODE_H
 
-#define NUM_ZONES 7
 
-struct inode {
+#define NUM_ZONES 7
+#define INODE_SIZE sizeof(struct inode_)
+
+typedef struct inode_ {
   uint16_t mode;		/* mode_t - file type, protection, etc. */
   uint16_t nlinks;		/* nlink_t - how many links to this file */
   uint16_t uid;			/* uid_t - user id of the file's owner */
@@ -16,7 +18,7 @@ struct inode {
   uint32_t ind_zone;
   uint32_t dbl_ind_zone;
   uint32_t unused;
-};
+}inode;
 
 #endif
 

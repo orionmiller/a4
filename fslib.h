@@ -24,10 +24,12 @@
 #define BASICBLOCK 1024
 
 #define S_BLOCK_MAGIC 0x4D5A
-
+#define FILENAME_SIZE 60
+#define INODE_NUM_SIZE sizeof(uint32_t)
+#define FILE_ENTRY_SIZE (FILENAME_SIZE+INODE_NUM_SIZE)
 
 typedef union generic_block{
-  struct partition part;
+  struct partition p_table;
   struct super_block s_block;
 }block;
 
@@ -47,8 +49,7 @@ typedef union generic_block{
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-block * getSuperBlock(FILE *fs);
-
+block * getSuperBlock(FILE *fs, uint32_t offset);
 
 /* Takes a file pointer and checks if there is a valid partition table
  *   at 0x1BE + offset and returns the partition table data.
@@ -67,7 +68,7 @@ block * getSuperBlock(FILE *fs);
  * NOTES:
  *   The pointer to the table should be freed when done.
  */
-block * getPartTable(FILE *fs, uint8_t part_off);
+block* getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num);
 
 
 /* Checks to make sure fread() did not return an EOF or set ERRNO.

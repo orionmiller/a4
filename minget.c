@@ -32,8 +32,10 @@ options * handleOptions(int argc, char *argv[]);
 int main(int argc, char *argv[])
 {
   block *Block;
+  block *SBlock;
   options *Opt;
   FILE *fs;
+
 
 
   if ((Opt = handleOptions(argc, argv))==NULL)
@@ -41,37 +43,55 @@ int main(int argc, char *argv[])
       printf("minls [-v] [-p part [-s subpart]] imagefile [path]\n");
       exit(EXIT_FAILURE);
     }
-  
-  printf("imagefile: \'%s\'\n", Opt->imagefile);
-  printf("path: \'%s\'\n", Opt->path);
+
 
   FATALCALL((fs = fopen(Opt->imagefile, "rb"))==NULL,"fopen");
-  if((Block = getSuperBlock(fs))==NULL)
+
+  /*check super block*/
+  if((SBlock = getSuperBlock(fs, 0)) == NULL) /*MAGIC NUMBER*/
     {
-      fprintf(stderr, "Super Block Error\n");
-      fclose(fs);
-      exit(EXIT_FAILURE);
-    }
-  else
-    {
-      printf("Valid Super Block\n");
-    }
-  /*
-  if((Block = getPartTable(fs, 0))==NULL)
-    {
-      fprintf(stderr, "Partition Table Error\n");
-      fclose(fs);
-      exit(EXIT_FAILURE);
-    }
-  else
-    {
-      printf("Is a partition!\n");
-      printf("Parition Type: 0x%x\n", Block->part.type);
+      printf("Bad Super Block.\n");
       free(Block);
+      exit(EXIT_FAILURE);
     }
-  */
+  /*needed data from super block
+   * block_size
+   * zone_size 
+   */
+  /*inode-pos = (2+imap_block+zmap_block)*blocksize;*/
+  /*zone size = blocksize << log_zone_size*/
+  /*data-pos = firstdatazone * zonesize*/
+
+  /* root inode
+   *   - read in structure
+   * while (next file exists)
+   *    take in filename/inode #
+   *    grabe inode
+   *    while (zones are left take the zone offset)
+   *     - read zone data into malloc data
+   *    increment to next file in path
+   * return data;
+   */
+  
+  if (Opt->part_off > -1 && Opt-> part_off < 4)
+    {
+      Block = getPartTable(fs, 0, Opt->part_off); /*MAGIC NUMBER*/
+      if (!Block)
+	{
+	  fprintf(stderr, "Partition Table Error\n");
+	  exit(EXIT_FAILURE);
+	}
+      printf("Partition Size: %u\n", Block->p_table.size);
+    }
+
+  /*acquire sub partition stuff*/
+
+  
+
   fclose(fs);
+  free(Block);
   free(Opt);
+  free(SBlock);
   return EXIT_SUCCESS;
 }
 
@@ -160,5 +180,33 @@ options * handleOptions(int argc, char *argv[])
   if (Opt->subpart_off != -1)
     {
       printf("sub partition offset: %d\n", Opt->subpart_off);
+    }
+  */
+
+
+  /*
+
+  if((Block = getSuperBlock(fs))==NULL)
+    {
+      fprintf(stderr, "Super Block Error\n");
+      fclose(fs);
+      exit(EXIT_FAILURE);
+    }
+  else
+    {
+      printf("Valid Super Block\n");
+    }
+
+  if((Block = getPartTable(fs, 0))==NULL)
+    {
+      fprintf(stderr, "Partition Table Error\n");
+      fclose(fs);
+      exit(EXIT_FAILURE);
+    }
+  else
+    {
+      printf("Is a partition!\n");
+      printf("Parition Type: 0x%x\n", Block->part.type);
+
     }
   */

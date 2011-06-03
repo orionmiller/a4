@@ -9,7 +9,7 @@ all: minget #fs minls minget
 #fs: #dependencies
 #	$(CC) $(CFLAGS) $ -o minls
 
-minget: $(GET_SRCS)
+minget: $(GET_SRCS) $(GET_HDRS)
 	$(CC) $(CFLAGS) $(GET_SRCS) -o minget
 
 #minls: #dependencies

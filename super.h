@@ -25,7 +25,7 @@ struct super_block {
 };
 
 /*#define NIL_SUPER (struct super_block *) 0*/
-#define S_BLOCK_OFF     1024                         /*Super Block File Offset*/
+#define S_BLOCK_BASE     1024                         /*Super Block File Offset*/
 #define S_BLOCK_SIZE    (sizeof(struct super_block))
 #define S_BLOCK_MAGIC_LITTLE   0x4D5A /*magic num on little endian machine*/
 #define S_BLOCK_MAGIC_BIG 0x5A4D /*magic num on big endian machine*/
