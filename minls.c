@@ -25,20 +25,23 @@ typedef struct param_options {
   uint8_t verbose;
   char *imagefile;
   char *path;
-  char *dstpath;
 }options;
 
 options * handleOptions(int argc, char *argv[]);
 
-void printFile(FILE *output, uint8_t *data, uint32_t data_size)
+void printDir(FILE *output, uint8_t *data, uint32_t data_size)
 {
  uint32_t pos;
+ uint32_t c_pos;
 
- for (pos = 0; pos < data_size; pos++)
+ for (pos = 0; pos < data_size; pos += DIR_ENTRY_SIZE)
    {
-     fprintf(output, "%c", data[pos]);
+     for (c_pos = 0; data[c_pos+pos+INODE_NUM_SIZE] != '\0' && c_pos < FILENAME_SIZE; c_pos++)
+       {
+	 putchar(data[c_pos+pos+INODE_NUM_SIZE]);
+       }
+     printf("\n");
    }
- fflush(output);
 }
 
 int main(int argc, char *argv[])
@@ -58,7 +61,7 @@ int main(int argc, char *argv[])
 
   if ((Opt = handleOptions(argc, argv))==NULL)
     {
-      printf("minget [-v] [-p part [-s subpart]] imagefile srcpath [dstpath]\n");
+      printf("minls [-v] [-p part [-s subpart]] imagefile [path]\n");
       exit(EXIT_FAILURE);
     }
 
@@ -71,28 +74,28 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
     }
 
-  /*determin output*/
+  part_start = 0;
   output = stdout;
-  part_start = 0; /*0 is start of image*/
 
   if (Opt->part_num == -1 && Opt->subpart_num == -1) /*no partition or subpartition*/
     {
       zone_size = S_block->block_size << S_block->log_zone_size;
-      inode_off = (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
+      inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
+
     }
   else if (Opt->part && !Opt->subpart) /*partition but no subpartition*/
     {
       P_table = getPartTable(fs, part_start, Opt->part_num);
       if (P_table == NULL)
-	  exit(EXIT_FAILURE);
-
+	exit(EXIT_FAILURE);
+      
       part_start = P_table->lFirst * SECTOR_SIZE;
       free(S_block);
       S_block = getSuperBlock(fs, part_start);
-
+      
       if (S_block == NULL)
-	  exit(EXIT_FAILURE);
-
+	exit(EXIT_FAILURE);
+      
       zone_size = S_block->block_size << S_block->log_zone_size;
       inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
     }
@@ -128,10 +131,12 @@ int main(int argc, char *argv[])
       fprintf(stderr, "File Doesn't Exist\n");
       exit(EXIT_FAILURE);
     }
-
+  printf("zone size: %u\n", zone_size);
+  printf("inode size: %u\n", Inode->size);
+  printf("zone 0 ptr: %u\n", Inode->zone[0]);
   data = getData(fs, Inode, part_start, zone_size);
 
-  printFile(output, data, Inode->size);  
+  printDir(output, data, Inode->size);  
 
   fclose(fs); /*check for errors*/
   if(P_table!=NULL)
@@ -191,7 +196,6 @@ options * handleOptions(int argc, char *argv[])
 	}
     }
 
-
   if (Opt->subpart == 1 && Opt->part == 0)
     {
       return NULL;
@@ -199,22 +203,16 @@ options * handleOptions(int argc, char *argv[])
 
   switch (non_opt_args)
     {
-    case 2: /*imagefile given by user*/
+    case 2: /*imagefile is only provided by user*/
       Opt->imagefile = argv[argc-1];
       FATALCALL((Opt->path=(char *)calloc(2*sizeof(char), 
         2*sizeof(char)))==NULL, "calloc");
       Opt->path[0] = '/';
       break;
 
-    case 3: /*imagefile and path given by user*/
+    case 3: /*imigfile and path is provided by user*/
       Opt->imagefile = argv[argc-2];
       Opt->path = argv[argc-1];
-      break;
-    
-    case 4: /*imagefile, path, and dstpath given by user*/
-      Opt->imagefile = argv[argc-3];
-      Opt->path = argv[argc-2];
-      Opt->dstpath = argv[argc-1];
       break;
 
     default:

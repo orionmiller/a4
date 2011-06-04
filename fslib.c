@@ -24,7 +24,6 @@ p_table* getPartTable(FILE *fs, uint32_t offset, uint8_t p_table_num)
   FATALCALL(fread((uint8_t *)&ptable_sig_1, 1, BYTE, fs) < BYTE,"fread");
 
 
-
   /*Check Partition Signature 2 - Magic Num Below*/
   FATALCALL(fseek(fs, offset + PART_SIG_2_OFF , SEEK_SET)==-1,"fseek");
   FATALCALL(fread((uint8_t *)&ptable_sig_2, 1, BYTE, fs) < BYTE, "fread")
@@ -75,6 +74,7 @@ s_block * getSuperBlock(FILE *fs, uint32_t offset)
 inode * getFile(FILE *fs, char ** path, uint32_t inode_off, uint32_t part_off, uint32_t zone_size)
 {
   uint32_t inode_num = ROOT_INODE_NUM;
+
   uint8_t *dir_data;
   inode *Inode;
   uint32_t i;
@@ -88,8 +88,8 @@ inode * getFile(FILE *fs, char ** path, uint32_t inode_off, uint32_t part_off, u
   for(i=0; path[i] != NULL; i++)
     {
       FATALCALL((dir_data=malloc(Inode->size))==NULL,"malloc");
-      getData(fs, dir_data, Inode, part_off, zone_size);
-      inode_num = existsInPath(dir_data, Inode->size/DIR_ENTRY_SIZE, path[i]); /*path is signed, arg is unsinged*/     
+      dir_data = getData(fs, Inode, part_off, zone_size);
+      inode_num = existsInPath(dir_data, Inode->size/DIR_ENTRY_SIZE, path[i]); /*path is signed, arg is unsinged*/
       if (inode_num == 0)
 	return NULL;
 
@@ -110,18 +110,20 @@ void getInode(inode * Inode, uint32_t inode_num, uint32_t inode_off, FILE *fs)
   FATALCALL((fread((inode *)Inode, 1, INODE_SIZE, fs))!=INODE_SIZE,"fread");/*magic num*/
 }
 
+
 uint32_t existsInPath(uint8_t * dir_data, uint32_t dir_size, char *filename)
 {
   uint8_t dir_entry_name[60];
   uint32_t inode_num;
+
   uint8_t *dir_entry_pos = dir_data;
 
-  while((dir_entry_pos - dir_data) < dir_size)
+  while((dir_entry_pos - dir_data) < (dir_size*DIR_ENTRY_SIZE))
     {
-      memcpy(dir_entry_pos,dir_entry_name,FILENAME_SIZE);
+      memcpy(dir_entry_name,dir_entry_pos+INODE_NUM_SIZE,FILENAME_SIZE);
       if(strncmp((char *)dir_entry_name,filename,FILENAME_SIZE)==0)
 	{
-	  memcpy(dir_entry_pos+FILENAME_SIZE, &inode_num, INODE_NUM_SIZE);
+	  memcpy(&inode_num, dir_entry_pos, INODE_NUM_SIZE);
 	  return inode_num;
 	}
       dir_entry_pos += DIR_ENTRY_SIZE;
@@ -129,17 +131,18 @@ uint32_t existsInPath(uint8_t * dir_data, uint32_t dir_size, char *filename)
   return 0;
 }
 
-void getData(FILE *fs, uint8_t *data, inode *Inode, uint32_t part_off, uint32_t zone_size)
+uint8_t * getData(FILE *fs, inode *Inode, uint32_t part_off, uint32_t zone_size)
 {
   uint32_t filesize = Inode->size;
   uint32_t num_zones = filesize / zone_size;
   uint32_t current_zone = 0;
   uint32_t read;
+  uint8_t *data;
   if (filesize%zone_size > 0)
     {
       num_zones++;
     }
-  FATALCALL((data=malloc(filesize))==NULL, "malloc");
+  FATALCALL((data=malloc(num_zones*zone_size))==NULL, "malloc");
 
   for(read=0; current_zone < num_zones && read<9; read++)
     {
@@ -156,6 +159,7 @@ void getData(FILE *fs, uint8_t *data, inode *Inode, uint32_t part_off, uint32_t 
 	  getDblZone(data, Inode->dbl_ind_zone, part_off, &current_zone, zone_size, fs, num_zones);
 	}
     }
+  return data;
 } 
 
 
@@ -163,6 +167,7 @@ void getDirectZone(uint8_t *data, uint32_t zone_ptr, uint32_t part_off, uint32_t
 {
   uint32_t file_pos = part_off + (zone_ptr * zone_size);
   uint8_t * data_pos = data + (*current_zone * zone_size); /*make sure correct add*/
+
   FATALCALL(fseek(fs, file_pos, SEEK_SET)==-1,"fseek");
   FATALCALL((fread((uint8_t *)data_pos, 1, zone_size, fs))!=zone_size,"fread");/*magic num*/
   (*current_zone) += 1;

@@ -1,10 +1,15 @@
 CC = gcc
 CFLAGS = -Wall -g 
 
+
+
 GET_SRCS = fslib.c minget.c toklib.c
 GET_HDRS = fslib.h inode.h toklib.h
 
-all: minget #fs minls minget
+LS_SRCS = fslib.c minls.c toklib.c
+LS_HDRS = fslib.h inode.h toklib.h
+
+#all: minget #fs minls minget
 
 #fs: #dependencies
 #	$(CC) $(CFLAGS) $ -o minls
@@ -12,9 +17,8 @@ all: minget #fs minls minget
 minget: $(GET_SRCS) $(GET_HDRS)
 	$(CC) $(CFLAGS) $(GET_SRCS) -o minget
 
-#minls: #dependencies
-#	@echo "no minls yet"
-#	CC) $(CFLAGS) -o minls
+minls: $(LS_SRCS) $(LS_HDRS)
+	$(CC) $(CFLAGS) $(LS_SRCS) -o minls
 
 handin:
 	@echo "add handin script"
