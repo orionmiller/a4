@@ -12,7 +12,7 @@
 
 #include "fslib.h"
 #include "debug.h"
-
+#include "verbose.h"
 
 #define OPT_STR "psv"
 #define OPTIONS_SIZE (sizeof(struct param_options))
@@ -29,20 +29,33 @@ typedef struct param_options {
 
 options * handleOptions(int argc, char *argv[]);
 
-void printDir(FILE *output, uint8_t *data, uint32_t data_size)
+void printDir(FILE *fs, inode * dirInode, uint8_t *dir_data, uint32_t inode_off, char* path)
 {
- uint32_t pos;
- uint32_t c_pos;
-
- for (pos = 0; pos < data_size; pos += DIR_ENTRY_SIZE)
-   {
-     for (c_pos = 0; data[c_pos+pos+INODE_NUM_SIZE] != '\0' && c_pos < FILENAME_SIZE; c_pos++)
-       {
-	 putchar(data[c_pos+pos+INODE_NUM_SIZE]);
-       }
-     printf("\n");
-   }
+  uint8_t dir_entry_name[FILENAME_SIZE + 1];
+  uint8_t *dir_entry_pos = dir_data;
+  uint32_t inode_num;
+  uint32_t dir_num_entries;
+  inode * entry_Inode;
+  uint8_t perms[PERM_SIZE+1];
+  FATALCALL((entry_Inode=malloc(INODE_SIZE))==NULL,"malloc");
+  perms[PERM_SIZE]='\0'; /*null terminate the permissions string*/
+  dir_num_entries = (dirInode->size / DIR_ENTRY_SIZE);
+  dir_entry_name[FILENAME_SIZE] = '\0';
+  printf("%s:\n", path);
+  while((dir_entry_pos - dir_data) < (dir_num_entries*DIR_ENTRY_SIZE))
+    {
+      memcpy(&inode_num, dir_entry_pos, INODE_NUM_SIZE);
+      if (inode_num > 0)
+	{
+	  memcpy(dir_entry_name,dir_entry_pos+INODE_NUM_SIZE,FILENAME_SIZE);
+	  getInode(entry_Inode, inode_num, inode_off, fs);
+	  getPerm(entry_Inode->mode, perms);
+	  printf("%s %9d %s\n", perms, entry_Inode->size, dir_entry_name);
+	}
+      dir_entry_pos += DIR_ENTRY_SIZE;
+    }
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -56,7 +69,7 @@ int main(int argc, char *argv[])
   uint32_t inode_off; /*beginning of inode zone*/
   uint32_t zone_size;
   uint8_t *data;
-  char **path;
+  char **path; /*tokenize path*/
  
 
   if ((Opt = handleOptions(argc, argv))==NULL)
@@ -67,57 +80,63 @@ int main(int argc, char *argv[])
 
   FATALCALL((fs = fopen(Opt->imagefile, "rb"))==NULL,"fopen");
 
-  /*check super block*/
-  if((S_block = getSuperBlock(fs, 0)) == NULL) /*MAGIC NUMBER*/
-    {
-      free(S_block);
-      exit(EXIT_FAILURE);
-    }
-
   part_start = 0;
   output = stdout;
 
-  if (Opt->part_num == -1 && Opt->subpart_num == -1) /*no partition or subpartition*/
+  if (!(Opt->part) && !(Opt->subpart)) /*no partition or subpartition*/
     {
+      if((S_block = getSuperBlock(fs, Opt->part_num)) == NULL) /*MAGIC NUMBER*/
+	{
+	  free(S_block);
+	  exit(EXIT_FAILURE);
+	}
       zone_size = S_block->block_size << S_block->log_zone_size;
-      inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
+      inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks)
+	* S_block->block_size;
 
     }
-  else if (Opt->part && !Opt->subpart) /*partition but no subpartition*/
+  else if ((Opt->part) && !(Opt->subpart)) /*partition but no subpartition*/
     {
       P_table = getPartTable(fs, part_start, Opt->part_num);
       if (P_table == NULL)
-	exit(EXIT_FAILURE);
-      
+	{
+	  free(P_table);
+	  exit(EXIT_FAILURE);
+	}
+
       part_start = P_table->lFirst * SECTOR_SIZE;
-      free(S_block);
-      S_block = getSuperBlock(fs, part_start);
-      
-      if (S_block == NULL)
-	exit(EXIT_FAILURE);
-      
+      if((S_block = getSuperBlock(fs, part_start)) == NULL) /*MAGIC NUMBER*/
+	{
+	  free(S_block);
+	  exit(EXIT_FAILURE);
+	}
       zone_size = S_block->block_size << S_block->log_zone_size;
-      inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
+      inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks)
+	* S_block->block_size;
     }
   else if (Opt->part && Opt->subpart) /* partition and subpartition */
     {
       P_table = getPartTable(fs, part_start, Opt->part_num); /*0 is start of image*/
       if (P_table == NULL)
+	{
+	  free(P_table);
 	  exit(EXIT_FAILURE);
+	}
 
       part_start = P_table->lFirst * SECTOR_SIZE;
-
-      free(S_block);
-      S_block = getSuperBlock(fs, part_start);
-      if (S_block == NULL)
-	  exit(EXIT_FAILURE);
-
       free(P_table);
       P_table = getPartTable(fs, part_start, Opt->subpart_num);
       if (P_table == NULL)
+	{
+	  free(P_table);
 	  exit(EXIT_FAILURE);
-
-      part_start += P_table->lFirst * SECTOR_SIZE;
+	}
+      part_start = P_table->lFirst * SECTOR_SIZE;
+      if((S_block = getSuperBlock(fs, part_start)) == NULL) /*MAGIC NUMBER*/
+	{
+	  free(S_block);
+	  exit(EXIT_FAILURE);
+	}
       zone_size = S_block->block_size << S_block->log_zone_size;
       inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
     }
@@ -125,18 +144,18 @@ int main(int argc, char *argv[])
     {
       exit(EXIT_FAILURE);
     }
+
   path =tokstr(Opt->path, "/");
   if ((Inode = getFile(fs, path, inode_off, part_start, zone_size))==NULL)
     {
       fprintf(stderr, "File Doesn't Exist\n");
       exit(EXIT_FAILURE);
     }
-  printf("zone size: %u\n", zone_size);
-  printf("inode size: %u\n", Inode->size);
-  printf("zone 0 ptr: %u\n", Inode->zone[0]);
-  data = getData(fs, Inode, part_start, zone_size);
 
-  printDir(output, data, Inode->size);  
+  data = getData(fs, Inode, part_start, zone_size);
+  if (Opt->verbose)
+    verbose(S_block, Inode);
+  printDir(fs, Inode, data, inode_off, Opt->path);
 
   fclose(fs); /*check for errors*/
   if(P_table!=NULL)

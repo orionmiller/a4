@@ -12,6 +12,7 @@
 
 #include "fslib.h"
 #include "debug.h"
+#include "verbose.h"
 
 
 #define OPT_STR "psv"
@@ -65,20 +66,23 @@ int main(int argc, char *argv[])
   FATALCALL((fs = fopen(Opt->imagefile, "rb"))==NULL,"fopen");
 
   /*check super block*/
-  if((S_block = getSuperBlock(fs, 0)) == NULL) /*MAGIC NUMBER*/
-    {
-      free(S_block);
-      exit(EXIT_FAILURE);
-    }
 
-  /*determin output*/
+
   output = stdout;
+  if (Opt->dstpath)
+      FATALCALL((output = fopen(Opt->dstpath, "w+b"))==NULL,"fopen");
+
   part_start = 0; /*0 is start of image*/
 
   if (Opt->part_num == -1 && Opt->subpart_num == -1) /*no partition or subpartition*/
     {
+      if((S_block = getSuperBlock(fs, 0)) == NULL) /*MAGIC NUMBER*/
+	{
+	  free(S_block);
+	  exit(EXIT_FAILURE);
+	}
       zone_size = S_block->block_size << S_block->log_zone_size;
-      inode_off = (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
+      inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
     }
   else if (Opt->part && !Opt->subpart) /*partition but no subpartition*/
     {
@@ -87,12 +91,12 @@ int main(int argc, char *argv[])
 	  exit(EXIT_FAILURE);
 
       part_start = P_table->lFirst * SECTOR_SIZE;
-      free(S_block);
-      S_block = getSuperBlock(fs, part_start);
 
-      if (S_block == NULL)
+      if((S_block = getSuperBlock(fs, 0)) == NULL) /*MAGIC NUMBER*/
+	{
+	  free(S_block);
 	  exit(EXIT_FAILURE);
-
+	}
       zone_size = S_block->block_size << S_block->log_zone_size;
       inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
     }
@@ -100,21 +104,26 @@ int main(int argc, char *argv[])
     {
       P_table = getPartTable(fs, part_start, Opt->part_num); /*0 is start of image*/
       if (P_table == NULL)
+	{
+	  free(P_table);
 	  exit(EXIT_FAILURE);
+	}
 
       part_start = P_table->lFirst * SECTOR_SIZE;
-
-      free(S_block);
-      S_block = getSuperBlock(fs, part_start);
-      if (S_block == NULL)
-	  exit(EXIT_FAILURE);
 
       free(P_table);
       P_table = getPartTable(fs, part_start, Opt->subpart_num);
       if (P_table == NULL)
+	{
+	  free(P_table);
 	  exit(EXIT_FAILURE);
-
-      part_start += P_table->lFirst * SECTOR_SIZE;
+	}
+      part_start = P_table->lFirst * SECTOR_SIZE;
+      if((S_block = getSuperBlock(fs, part_start)) == NULL) /*MAGIC NUMBER*/
+	{
+	  free(S_block);
+	  exit(EXIT_FAILURE);
+	}
       zone_size = S_block->block_size << S_block->log_zone_size;
       inode_off = part_start + (2 + S_block->imap_blocks + S_block->zmap_blocks) * S_block->block_size;
     }
@@ -130,7 +139,8 @@ int main(int argc, char *argv[])
     }
 
   data = getData(fs, Inode, part_start, zone_size);
-
+  if (Opt->verbose)
+    verbose(S_block, Inode);
   printFile(output, data, Inode->size);  
 
   fclose(fs); /*check for errors*/

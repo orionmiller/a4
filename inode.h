@@ -23,20 +23,3 @@ typedef struct inode_ {
 }inode;
 
 #endif
-
-/*OLD
-struct inode {
-  uint16_t mode;
-  int16_t nlinks;
-  int16_t uid;	
-  uint16_t gid;	
-  uint32_t size;
-  time_t atime;
-  time_t mtime;
-  time_t ctime;
-  uint32_t zone[NUM_ZONES]; 
-  uint32_t ind_zone;
-  uint32_t dbl_ind_zone;
-  uint32_t unused;
-};
-*/

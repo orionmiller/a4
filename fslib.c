@@ -78,6 +78,7 @@ inode * getFile(FILE *fs, char ** path, uint32_t inode_off, uint32_t part_off, u
   uint8_t *dir_data;
   inode *Inode;
   uint32_t i;
+  uint32_t dir_num_entries;
   FATALCALL((Inode=malloc(INODE_SIZE))==NULL,"malloc");
 
   getInode(Inode, ROOT_INODE_NUM, inode_off, fs);
@@ -89,7 +90,8 @@ inode * getFile(FILE *fs, char ** path, uint32_t inode_off, uint32_t part_off, u
     {
       FATALCALL((dir_data=malloc(Inode->size))==NULL,"malloc");
       dir_data = getData(fs, Inode, part_off, zone_size);
-      inode_num = existsInPath(dir_data, Inode->size/DIR_ENTRY_SIZE, path[i]); /*path is signed, arg is unsinged*/
+      dir_num_entries = (Inode->size/DIR_ENTRY_SIZE);
+      inode_num = existsInPath(dir_data, dir_num_entries, path[i]); 
       if (inode_num == 0)
 	return NULL;
 
@@ -113,7 +115,7 @@ void getInode(inode * Inode, uint32_t inode_num, uint32_t inode_off, FILE *fs)
 
 uint32_t existsInPath(uint8_t * dir_data, uint32_t dir_size, char *filename)
 {
-  uint8_t dir_entry_name[60];
+  uint8_t dir_entry_name[FILENAME_SIZE];
   uint32_t inode_num;
 
   uint8_t *dir_entry_pos = dir_data;
